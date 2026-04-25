@@ -182,8 +182,9 @@ button{cursor:pointer}
 
   <div id="transport-row-container"></div>
 
-  <div class="acts">
-    <button class="bp" id="btn-pdf" onclick="doPDF()">PDF Angebot erstellen</button>
+ <div class="acts">
+    <button id="btn-save" onclick="speichereAngebot()" disabled style="background:#1f6feb;color:#fff;border:none;padding:14px 28px;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;margin-right:8px">Angebot speichern</button>
+    <button class="bp" id="btn-pdf" onclick="doPDF()" disabled>PDF Angebot erstellen</button>
     <button class="br" onclick="resetAll()">Zurücksetzen</button>
   </div>
   <div id="msg-box" class="msg" style="display:none"></div>
@@ -199,7 +200,7 @@ var GR_OPT=[0.50,0.55];
 var ZR1_OPT=[0,0.02,0.03,0.05,0.07,0.08,0.10,0.12,0.15,0.18,0.20,0.30,0.50];
 var ZR23_OPT=[0,0.02,0.03,0.05,0.07,0.08,0.10,0.12,0.15,0.18,0.20];
 
-var S={erst:'',ini:'',bv:'',kunde:'',ansprech:'',kat:'',marke:'',ocPdf:'',prom:'',pos:[],showRab:false,showBrutto:false,lnr:'01',showTransport:false,transportKosten:'' ,notiz:''};
+var S={erst:'',ini:'',bv:'',kunde:'',ansprech:'',kat:'',marke:'',ocPdf:'',prom:'',pos:[],showRab:false,showBrutto:false,lnr:'01',showTransport:false,transportKosten:'' ,notiz:'',gespeichert:false,gespeichertId:null};
 
 var SIGS={};
 function getSig(n){return null;}
@@ -274,6 +275,7 @@ async function handleErst(n){
   S.erst=n;
   var p=n.trim().split(' ');
   S.ini=p.length>=2?(p[0][0]+p[1][0]).toUpperCase():(p[0]?p[0].substring(0,2).toUpperCase():'');
+  markUnsaved();
   if(S.ini){
     const lfd = await getNaechsteLfd(S.ini);
     if(lfd !== null){
@@ -409,13 +411,15 @@ function checkOk(){
     S.pos[0].menge!==''&&S.pos[0].menge!=='ALT'&&parseInt(S.pos[0].menge)>0 &&
     S.pos.every(function(p){return (p.menge!==''&&(p.menge==='ALT'||parseInt(p.menge)>0))}) &&
     S.pos.every(function(p){if(p.menge==='ALT')return true;var nv=getND(p);return nv>0});
-  document.getElementById('btn-pdf').disabled=!ok;
+  var btnSave=document.getElementById('btn-save');
+  var btnPdf=document.getElementById('btn-pdf');
+  if(btnSave) btnSave.disabled = !ok || S.gespeichert;
+  if(btnPdf) btnPdf.disabled = !ok || !S.gespeichert;
   var zeroP=S.pos.filter(function(p){return p.menge!=='ALT'&&getND(p)<=0});
   var mb=document.getElementById('msg-box');
   if(zeroP.length>0&&S.pos.length>0){mb.textContent='\u26a0 '+zeroP.length+' Position(en) mit Nettopreis 0,00 \u20ac \u2013 bitte manuell Preis eingeben';mb.style.display='block';}
   else{mb.style.display='none';}
 }
-
 function doPDF(){
   var nr=genNr();
   var d=new Date();
@@ -574,21 +578,7 @@ function doPDF(){
     if(w){w.document.write(pdf);w.document.close();}
     else{showMsg('Bitte Pop-ups erlauben und erneut versuchen.');return;}
     showMsg('\u2705 Angebot erstellt! Drucken: Strg+P \u2192 Als PDF speichern.');
- speichereInSupabase(nr).then(function(res){
-      if(res.ok){
-        showMsg('\u2705 Angebot ' + nr + ' erstellt und gespeichert.');
-        getNaechsteLfd(S.ini).then(function(lfd){
-          if(lfd !== null){
-            S.lnr = String(lfd).padStart(2,'0');
-            var lnrInput = document.getElementById('f-lnr');
-            if(lnrInput) lnrInput.value = S.lnr;
-            updateNr();
-          }
-        });
-      } else {
-        showMsg('\u26A0 PDF erstellt, aber NICHT in Datenbank gespeichert: ' + (res.error || 'Unbekannter Fehler'));
-      }
-    });   
+
   }catch(e){showMsg('Fehler: '+e.message)}
 }
 
@@ -675,15 +665,8 @@ async function speichereInSupabase(angebotsNr){
 
     const { data, error } = await supa.from('angebote').insert([datensatz]).select();
  if(error){
-      console.error('=== SUPABASE SPEICHERN-FEHLER ===');
-      console.error('Code:', error.code);
-      console.error('Message:', error.message);
-      console.error('Details:', error.details);
-      console.error('Hint:', error.hint);
-      console.error('Datensatz war:', JSON.stringify(datensatz, null, 2));
-      console.error('=================================');
-      alert('SPEICHER-FEHLER:\n\n' + error.message + '\n\n' + (error.details || '') + '\n\n(Details in der Browser-Konsole F12)');
-      return { ok: false, error: error.message };
+      console.error('Speichern-Fehler:', error);
+      return { ok: false, error: error.message || error.toString() };
     }
     return { ok: true, data: data && data[0] };
   }catch(e){
@@ -691,6 +674,63 @@ async function speichereInSupabase(angebotsNr){
     return { ok: false, error: e.message };
   }
 }
+  async function speichereAngebot(){
+  var btnSave = document.getElementById('btn-save');
+  if(!S.ini){
+    alert('Bitte zuerst einen Ersteller wählen.');
+    return;
+  }
+  if(!S.pos || S.pos.length === 0){
+    alert('Bitte mindestens eine Position hinzufügen.');
+    return;
+  }
+  if(btnSave){
+    btnSave.disabled = true;
+    btnSave.textContent = 'Speichere...';
+  }
+  try{
+    var nr = genNr();
+    var res = await speichereInSupabase(nr);
+    if(res.ok){
+      S.gespeichert = true;
+      S.gespeichertId = res.data ? res.data.id : null;
+      var savedNr = res.data && res.data.angebots_nr ? res.data.angebots_nr : nr;
+      showMsg('\u2705 Angebot ' + savedNr + ' gespeichert. Sie können jetzt das PDF erstellen.');
+      if(btnSave){
+        btnSave.textContent = '\u2713 Gespeichert';
+        btnSave.style.background = '#2ea043';
+      }
+      checkOk();
+    } else {
+      alert('Speichern fehlgeschlagen:\n\n' + (res.error || 'Unbekannter Fehler') + '\n\nBitte erneut versuchen oder Christoph informieren.');
+      if(btnSave){
+        btnSave.disabled = false;
+        btnSave.textContent = 'Angebot speichern';
+      }
+    }
+  }catch(e){
+    console.error('speichereAngebot Exception:', e);
+    alert('Speichern fehlgeschlagen:\n\n' + e.message);
+    if(btnSave){
+      btnSave.disabled = false;
+      btnSave.textContent = 'Angebot speichern';
+    }
+  }
+}
+
+function markUnsaved(){
+  if(S.gespeichert){
+    S.gespeichert = false;
+    S.gespeichertId = null;
+    var btnSave = document.getElementById('btn-save');
+    if(btnSave){
+      btnSave.textContent = 'Angebot speichern';
+      btnSave.style.background = '#1f6feb';
+    }
+    checkOk();
+  }
+}
+  
   function showMsg(t){var el=document.getElementById('msg-box');el.textContent=t;el.style.display='block';setTimeout(function(){el.style.display='none'},8000)}
 
 function resetAll(){
@@ -709,6 +749,10 @@ function resetAll(){
   document.getElementById('f-brutto').checked=false;
   
   S.erst='';S.ini='';updateNr();
+  S.gespeichert=false;S.gespeichertId=null;S.notiz='';
+  var fNotiz=document.getElementById('f-notiz');if(fNotiz)fNotiz.value='';
+  var btnSave=document.getElementById('btn-save');
+  if(btnSave){btnSave.textContent='Angebot speichern';btnSave.style.background='#1f6feb';btnSave.disabled=true;}
   renderPos();checkOk();
   document.getElementById('msg-box').style.display='none';
 }
