@@ -365,6 +365,7 @@ function init(){
   
   document.getElementById('f-ansprech').addEventListener('input',function(){S.ansprech=this.value});
   fuelleAufrufDropdowns();
+  aufrufBindeFilter();
   updateNr();checkOk();
 }
 
@@ -402,6 +403,10 @@ function toggleAufruf(){
   if(akk.hidden){
     akk.hidden = false;
     arrow.style.transform = 'rotate(180deg)';
+    if(!aufrufState.loaded){
+      ladeAngebote(false);
+      aufrufState.loaded = true;
+    }
   } else {
     akk.hidden = true;
     arrow.style.transform = 'rotate(0deg)';
@@ -742,26 +747,177 @@ async function getNaechsteLfd(kuerzel){
   }
 }
 
-async function getNaechsteLfd(kuerzel){
-  try{
-    const heute = new Date().toISOString().slice(0,10);
-    const { data, error } = await supa
-      .from('angebote')
-      .select('laufende_nr')
-      .eq('ersteller_kuerzel', kuerzel)
-      .eq('angebots_datum', heute)
-      .eq('geloescht', false)
-      .order('laufende_nr', { ascending: false })
-      .limit(1);
-    if(error){ console.error('Supabase Fehler:', error); return null; }
-    if(!data || data.length === 0) return 1;
-    return data[0].laufende_nr + 1;
-  }catch(e){
-    console.error('getNaechsteLfd Exception:', e);
-    return null;
+// =====================================================
+// Phase 1.5: Angebot aufrufen — Supabase-Suche
+// =====================================================
+
+var aufrufState = {
+  alleAngebote: [],
+  angezeigt: 0,
+  debounceTimer: null,
+  loaded: false
+};
+
+async function ladeAngebote(append){
+  if(!append) aufrufState.angezeigt = 0;
+
+  var volltext = document.getElementById('aufruf-volltext').value.trim();
+  var ersteller = document.getElementById('aufruf-ersteller').value;
+  var datumVon = document.getElementById('aufruf-datum-von').value;
+  var datumBis = document.getElementById('aufruf-datum-bis').value;
+  var kunde = document.getElementById('aufruf-kunde').value.trim();
+  var bauvorhaben = document.getElementById('aufruf-bauvorhaben').value.trim();
+  var serie = document.getElementById('aufruf-serie').value;
+  var kategorie = document.getElementById('aufruf-kategorie').value;
+  var minQm = document.getElementById('aufruf-min-qm').value;
+  var auchGeloescht = document.getElementById('aufruf-geloescht-toggle').checked;
+
+  var q = supa.from('angebote').select('*').order('erstellt_am', { ascending: false });
+
+  if(!auchGeloescht) q = q.eq('geloescht', false);
+
+  if(ersteller) q = q.eq('ersteller_name', ersteller);
+  if(datumVon) q = q.gte('angebots_datum', datumVon);
+  if(datumBis) q = q.lte('angebots_datum', datumBis);
+  if(kunde) q = q.ilike('kunde_name', '%' + kunde + '%');
+
+  if(bauvorhaben){
+    var bvWoerter = bauvorhaben.split(/\s+/).filter(function(w){return w.length > 0});
+    bvWoerter.forEach(function(w){
+      q = q.ilike('bauvorhaben', '%' + w + '%');
+    });
+  }
+
+  if(volltext){
+    var vtWoerter = volltext.split(/\s+/).filter(function(w){return w.length > 0});
+    vtWoerter.forEach(function(w){
+      var like = '%' + w + '%';
+      q = q.or(
+        'angebots_nr.ilike.' + like + ',' +
+        'kunde_name.ilike.' + like + ',' +
+        'kunde_plz_ort.ilike.' + like + ',' +
+        'bauvorhaben.ilike.' + like + ',' +
+        'ansprechpartner.ilike.' + like + ',' +
+        'interne_notiz.ilike.' + like + ',' +
+        'ersteller_name.ilike.' + like
+      );
+    });
+  }
+
+  q = q.limit(50);
+
+  try {
+    const { data, error } = await q;
+    if(error){ console.error('ladeAngebote Fehler:', error); return; }
+
+    var gefiltert = (data || []).filter(function(a){
+      var positionen = a.positionen || [];
+
+      if(serie){
+        var hatSerie = positionen.some(function(p){ return p.serie === serie });
+        if(!hatSerie) return false;
+      }
+
+      if(kategorie){
+        if(a.kategorie !== kategorie) return false;
+      }
+
+      if(minQm){
+        var bereich = minQm.split('-');
+        var min = parseFloat(bereich[0]);
+        var max = parseFloat(bereich[1]);
+        var summeQm = positionen.reduce(function(s,p){
+          if(p.me === 'm²' || p.me === 'm2'){
+            return s + (parseFloat(p.menge) || 0);
+          }
+          return s;
+        }, 0);
+        if(summeQm < min || summeQm > max) return false;
+      }
+
+      return true;
+    });
+
+    aufrufState.alleAngebote = gefiltert;
+    renderAngebote(append);
+  } catch(e){
+    console.error('ladeAngebote Exception:', e);
   }
 }
 
+function renderAngebote(append){
+  var tbody = document.getElementById('aufruf-tbody');
+  var alle = aufrufState.alleAngebote;
+  var nochZuZeigen = 10;
+
+  if(!append){
+    tbody.innerHTML = '';
+    aufrufState.angezeigt = 0;
+  }
+
+  if(alle.length === 0){
+    tbody.innerHTML = '<tr><td colspan="7" style="padding:20px;text-align:center;color:#888">Keine Angebote gefunden.</td></tr>';
+    document.getElementById('aufruf-mehr-laden').hidden = true;
+    document.getElementById('aufruf-treffer-count').textContent = '0 Treffer';
+    return;
+  }
+
+  var bisIndex = Math.min(aufrufState.angezeigt + nochZuZeigen, alle.length);
+  for(var i = aufrufState.angezeigt; i < bisIndex; i++){
+    tbody.innerHTML += renderAngebotZeile(alle[i]);
+  }
+  aufrufState.angezeigt = bisIndex;
+
+  var mehrBtn = document.getElementById('aufruf-mehr-laden');
+  mehrBtn.hidden = (aufrufState.angezeigt >= alle.length);
+
+  document.getElementById('aufruf-treffer-count').textContent =
+    aufrufState.angezeigt + ' von ' + alle.length + ' Angeboten';
+}
+
+function renderAngebotZeile(a){
+  var datum = a.angebots_datum ? formatDatumDE(a.angebots_datum) : '-';
+  var summe = a.gesamt_summe ? fmt(parseFloat(a.gesamt_summe)) : '-';
+  var geloeschtStyle = a.geloescht ? 'opacity:0.5;text-decoration:line-through' : '';
+
+  return '<tr style="border-bottom:1px solid #eee;'+geloeschtStyle+'">' +
+    '<td style="padding:8px 10px;font-family:monospace">'+esc(a.angebots_nr || '-')+'</td>' +
+    '<td style="padding:8px 10px">'+datum+'</td>' +
+    '<td style="padding:8px 10px">'+esc(a.kunde_name || '-')+'</td>' +
+    '<td style="padding:8px 10px">'+esc(a.bauvorhaben || '-')+'</td>' +
+    '<td style="padding:8px 10px">'+esc(a.ersteller_name || '-')+'</td>' +
+    '<td style="padding:8px 10px;text-align:right">'+summe+'</td>' +
+    '<td style="padding:8px 10px"><button type="button" onclick="ladeAngebotInsTool(\''+a.id+'\')" style="padding:4px 10px;background:#E30613;color:white;border:none;border-radius:3px;cursor:pointer;font-size:12px">Laden</button></td>' +
+  '</tr>';
+}
+
+function formatDatumDE(iso){
+  if(!iso) return '-';
+  var p = iso.split('-');
+  if(p.length !== 3) return iso;
+  return p[2] + '.' + p[1] + '.' + p[0];
+}
+
+function ladeAngebotInsTool(id){
+  alert('Laden ins Tool wird im nächsten Schritt gebaut.\nID: ' + id);
+}
+
+function aufrufBindeFilter(){
+  ['aufruf-ersteller','aufruf-datum-von','aufruf-datum-bis','aufruf-serie','aufruf-kategorie','aufruf-min-qm','aufruf-geloescht-toggle'].forEach(function(id){
+    document.getElementById(id).addEventListener('change', function(){ ladeAngebote(false) });
+  });
+
+  ['aufruf-volltext','aufruf-kunde','aufruf-bauvorhaben'].forEach(function(id){
+    document.getElementById(id).addEventListener('input', function(){
+      clearTimeout(aufrufState.debounceTimer);
+      aufrufState.debounceTimer = setTimeout(function(){ ladeAngebote(false) }, 300);
+    });
+  });
+
+  document.getElementById('aufruf-mehr-laden').addEventListener('click', function(){
+    ladeAngebote(true);
+  });
+}
 async function speichereInSupabase(angebotsNr){
   try{
     const heute = new Date().toISOString().slice(0,10);
