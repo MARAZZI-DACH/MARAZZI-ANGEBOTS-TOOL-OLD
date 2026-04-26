@@ -918,12 +918,50 @@ function formatDatumDE(iso){
 function ladeAngebotInsTool(id){
   alert('Laden ins Tool wird im nächsten Schritt gebaut.\nID: ' + id);
 }
+function handleAufrufKategorie(){
+  var kat = document.getElementById('aufruf-kategorie').value;
+  var mSel = document.getElementById('aufruf-marke');
+  var aktuelleMarke = mSel.value;
 
+  // Marke-Dropdown neu befüllen
+  mSel.innerHTML = '<option value="">— Alle —</option>';
+
+  if(!kat){
+    // Keine Kategorie gewählt → alle Marken aller Kategorien
+    var markenSet = {};
+    Object.keys(D.KM).forEach(function(k){
+      D.KM[k].forEach(function(eintrag){
+        markenSet[eintrag[0]] = true;
+      });
+    });
+    var markenSortiert = Object.keys(markenSet).sort(function(a,b){return a.localeCompare(b)});
+    markenSortiert.forEach(function(marke){
+      mSel.innerHTML += '<option value="'+esc(marke)+'">'+esc(marke)+'</option>';
+    });
+  } else {
+    // Kategorie gewählt → nur Marken dieser Kategorie
+    var entries = D.KM[kat] || [];
+    entries.forEach(function(e){
+      mSel.innerHTML += '<option value="'+esc(e[0])+'">'+esc(e[0])+'</option>';
+    });
+  }
+
+  // Falls die vorherige Marke noch in der neuen Liste ist → wiederherstellen
+  var optionen = Array.prototype.slice.call(mSel.options).map(function(o){return o.value});
+  if(aktuelleMarke && optionen.indexOf(aktuelleMarke) !== -1){
+    mSel.value = aktuelleMarke;
+  }
+}
 function aufrufBindeFilter(){
-  ['aufruf-ersteller','aufruf-datum-von','aufruf-datum-bis','aufruf-serie','aufruf-kategorie','aufruf-marke','aufruf-min-qm','aufruf-geloescht-toggle'].forEach(function(id){
+['aufruf-ersteller','aufruf-datum-von','aufruf-datum-bis','aufruf-serie','aufruf-marke','aufruf-min-qm','aufruf-geloescht-toggle'].forEach(function(id){
     document.getElementById(id).addEventListener('change', function(){ ladeAngebote(false) });
   });
 
+  // Kategorie hat eigenen Listener: erst Marken anpassen, dann suchen
+  document.getElementById('aufruf-kategorie').addEventListener('change', function(){
+    handleAufrufKategorie();
+    ladeAngebote(false);
+  });
   ['aufruf-volltext','aufruf-kunde','aufruf-bauvorhaben'].forEach(function(id){
     document.getElementById(id).addEventListener('input', function(){
       clearTimeout(aufrufState.debounceTimer);
