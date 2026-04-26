@@ -319,6 +319,28 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 function zrLabel(v){var p=(v*100).toFixed(0)+'%';if(v===0.30)return p+' (Eigenbedarf)';if(v===0.50)return p+' (Muster)';return p}
 function getND(p){if(p.nm!==''&&!isNaN(parseFloat(p.nm)))return parseFloat(p.nm);return p.net}
 
+function fuelleAufrufDropdowns(){
+  // Ersteller (aus D.E)
+  var eSel = document.getElementById('aufruf-ersteller');
+  D.E.forEach(function(name){
+    eSel.innerHTML += '<option value="'+esc(name)+'">'+esc(name)+'</option>';
+  });
+
+  // Serie (aus D.S, alphabetisch sortiert)
+  var sSel = document.getElementById('aufruf-serie');
+  var serienSortiert = D.S.slice().sort(function(a,b){return a.localeCompare(b)});
+  serienSortiert.forEach(function(serie){
+    sSel.innerHTML += '<option value="'+esc(serie)+'">'+esc(serie)+'</option>';
+  });
+
+  // Kategorie (aus D.KAT)
+  var kSel = document.getElementById('aufruf-kategorie');
+  D.KAT.forEach(function(kat){
+    kSel.innerHTML += '<option value="'+esc(kat)+'">'+esc(kat)+'</option>';
+  });
+  
+}
+  
 function init(){
   var d=new Date();
   document.getElementById('hdr-info').textContent='Version 2.0';
@@ -342,7 +364,7 @@ function init(){
   document.getElementById('f-bv').addEventListener('input',function(){S.bv=this.value});
   
   document.getElementById('f-ansprech').addEventListener('input',function(){S.ansprech=this.value});
-
+  fuelleAufrufDropdowns();
   updateNr();checkOk();
 }
 
