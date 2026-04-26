@@ -308,7 +308,7 @@ var GR_OPT=[0.50,0.55];
 var ZR1_OPT=[0,0.02,0.03,0.05,0.07,0.08,0.10,0.12,0.15,0.18,0.20,0.30,0.50];
 var ZR23_OPT=[0,0.02,0.03,0.05,0.07,0.08,0.10,0.12,0.15,0.18,0.20];
 
-var S={erst:'',ini:'',bv:'',kunde:'',ansprech:'',kat:'',marke:'',ocPdf:'',prom:'',pos:[],showRab:false,showBrutto:false,lnr:'01',showTransport:false,transportKosten:'' ,notiz:'',gespeichert:false,gespeichertId:null};
+var S={erst:'',ini:'',bv:'',kunde:'',ansprech:'',kat:'',marke:'',ocPdf:'',prom:'',pos:[],showRab:false,showBrutto:false,lnr:'01',showTransport:false,transportKosten:'' ,notiz:'',gespeichert:false,gespeichertId:null,geladenVon:null};
 
 var SIGS={};
 function getSig(n){return null;}
@@ -973,7 +973,32 @@ function aufrufBindeFilter(){
     ladeAngebote(true);
   });
 }
-async function speichereInSupabase(angebotsNr){
+async function naechsteVariante(parentId){
+  try{
+    const { data, error } = await supa
+      .from('angebote')
+      .select('variante')
+      .eq('parent_id', parentId);
+    if(error){
+      console.error('naechsteVariante Fehler:', error);
+      return 'B';
+    }
+    var belegt = (data || [])
+      .map(function(r){ return r.variante; })
+      .filter(function(v){ return !!v; });
+    var buchstaben = ['B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+    for(var i=0; i<buchstaben.length; i++){
+      if(belegt.indexOf(buchstaben[i]) === -1){
+        return buchstaben[i];
+      }
+    }
+    return 'Z';
+  }catch(e){
+    console.error('naechsteVariante Exception:', e);
+    return 'B';
+  }
+}
+ async function speichereInSupabase(angebotsNr){
   try{
     const heute = new Date().toISOString().slice(0,10);
     const lfdNum = parseInt(S.lnr, 10) || 1;
@@ -981,13 +1006,18 @@ async function speichereInSupabase(angebotsNr){
     const kundeName = kundenZeilen[0] || '';
     const kundeStrasse = kundenZeilen[1] || '';
     const kundePlzOrt = kundenZeilen[2] || '';
-
     const gesamt = (S.pos || []).reduce(function(sum, p){
       const menge = parseFloat(p.menge) || 0;
       const netto = calcNet(p.brutto || 0, p.gr || 0, p.z1 || 0, p.z2 || 0, p.z3 || 0);
       return sum + (menge * netto);
     }, 0);
-
+    var parentId = null;
+    var varianteWert = null;
+    if(S.geladenVon && S.geladenVon.id){
+      var rootId = S.geladenVon.parent_id || S.geladenVon.id;
+      varianteWert = await naechsteVariante(rootId);
+      parentId = rootId;
+    }
     const datensatz = {
       ersteller_kuerzel: S.ini || 'XX',
       angebots_datum: heute,
@@ -1007,11 +1037,12 @@ async function speichereInSupabase(angebotsNr){
       transport_kosten: S.transportKosten ? parseFloat(String(S.transportKosten).replace(',','.')) || null : null,
       positionen: S.pos || [],
       gesamt_summe: gesamt,
-      interne_notiz: S.notiz || ''
+      interne_notiz: S.notiz || '',
+      parent_id: parentId,
+      variante: varianteWert
     };
-
     const { data, error } = await supa.from('angebote').insert([datensatz]).select();
- if(error){
+    if(error){
       console.error('Speichern-Fehler:', error);
       return { ok: false, error: error.message || error.toString() };
     }
@@ -1096,7 +1127,7 @@ function resetAll(){
   document.getElementById('f-brutto').checked=false;
   
   S.erst='';S.ini='';updateNr();
-  S.gespeichert=false;S.gespeichertId=null;S.notiz='';
+  S.gespeichert=false;S.gespeichertId=null;S.geladenVon=null;S.notiz='';
   var fNotiz=document.getElementById('f-notiz');if(fNotiz)fNotiz.value='';
   var btnSave=document.getElementById('btn-save');
   if(btnSave){btnSave.textContent='Angebot speichern';btnSave.style.background='#1f6feb';btnSave.disabled=true;}
