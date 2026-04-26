@@ -813,25 +813,6 @@ async function ladeAngebote(append){
     });
   }
 
-  if(volltext){
-    var vtWoerter = volltext.split(/\s+/).filter(function(w){return w.length > 0});
-    vtWoerter.forEach(function(w){
-      var like = '%' + w + '%';
-      q = q.or(
-        'angebots_nr.ilike.' + like + ',' +
-        'kunde_name.ilike.' + like + ',' +
-        'kunde_plz_ort.ilike.' + like + ',' +
-        'bauvorhaben.ilike.' + like + ',' +
-        'ansprechpartner.ilike.' + like + ',' +
-        'interne_notiz.ilike.' + like + ',' +
-        'ersteller_name.ilike.' + like + ',' +
-        'positionen::text.ilike.' + like + ',' +
-        'kategorie.ilike.' + like + ',' +
-        'marke.ilike.' + like
-      );
-    });
-  }
-
   q = q.limit(50);
 
   try {
@@ -862,7 +843,26 @@ async function ladeAngebote(append){
         }, 0);
         if(summeQm < min || summeQm > max) return false;
       }
-
+ if(volltext){
+        var vtWoerter = volltext.split(/\s+/).filter(function(w){return w.length > 0});
+        var suchtext = (
+          (a.angebots_nr || '') + ' ' +
+          (a.kunde_name || '') + ' ' +
+          (a.kunde_strasse || '') + ' ' +
+          (a.kunde_plz_ort || '') + ' ' +
+          (a.bauvorhaben || '') + ' ' +
+          (a.ansprechpartner || '') + ' ' +
+          (a.interne_notiz || '') + ' ' +
+          (a.ersteller_name || '') + ' ' +
+          (a.kategorie || '') + ' ' +
+          (a.marke || '') + ' ' +
+          JSON.stringify(positionen)
+        ).toLowerCase();
+        var alleGefunden = vtWoerter.every(function(w){
+          return suchtext.indexOf(w.toLowerCase()) !== -1;
+        });
+        if(!alleGefunden) return false;
+      }
       return true;
     });
 
