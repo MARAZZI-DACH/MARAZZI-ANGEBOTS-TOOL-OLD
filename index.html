@@ -107,6 +107,109 @@ button{cursor:pointer}
 </div>
 
 <div class="wrap">
+  <div class="card" id="aufruf-card">
+  <button type="button" id="btn-aufruf-toggle" onclick="toggleAufruf()" style="width:100%;padding:12px 16px;background:#1C2D4A;color:white;border:none;border-radius:4px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:space-between">
+    <span>📂 Angebot aufrufen</span>
+    <span id="aufruf-arrow" style="transition:transform 0.2s">▼</span>
+  </button>
+
+  <div id="aufruf-akkordion" hidden style="margin-top:16px">
+
+    <div style="margin-bottom:12px">
+      <input type="text" id="aufruf-volltext" placeholder="🔍 Volltextsuche (z.B. &quot;Mahler Augsburg&quot;)" autocomplete="off" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:4px;font-size:14px;box-sizing:border-box">
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">
+
+      <div>
+        <label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin-bottom:4px">Ersteller</label>
+        <select id="aufruf-ersteller" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:4px">
+          <option value="">— Alle —</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin-bottom:4px">Datum von</label>
+        <input type="date" id="aufruf-datum-von" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box">
+      </div>
+
+      <div>
+        <label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin-bottom:4px">Datum bis</label>
+        <input type="date" id="aufruf-datum-bis" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box">
+      </div>
+
+      <div>
+        <label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin-bottom:4px">Kunde</label>
+        <input type="text" id="aufruf-kunde" placeholder="Teilstring" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box">
+      </div>
+
+      <div>
+        <label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin-bottom:4px">Bauvorhaben</label>
+        <input type="text" id="aufruf-bauvorhaben" placeholder="Multi-Wort" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box">
+      </div>
+
+      <div>
+        <label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin-bottom:4px">Serie</label>
+        <select id="aufruf-serie" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:4px">
+          <option value="">— Alle —</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin-bottom:4px">Kategorie</label>
+        <select id="aufruf-kategorie" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:4px">
+          <option value="">— Alle —</option>
+        </select>
+      </div>
+
+      <div>
+        <label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin-bottom:4px">Min-m²</label>
+        <select id="aufruf-min-qm" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:4px">
+          <option value="">— Egal —</option>
+          <option value="0-100">&lt; 100</option>
+          <option value="100-500">100 - 500</option>
+          <option value="500-1000">500 - 1000</option>
+          <option value="1000-2000">1000 - 2000</option>
+          <option value="2000-4000">2000 - 4000</option>
+          <option value="4000-999999">&gt; 4000</option>
+        </select>
+      </div>
+
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:8px 0;border-top:1px solid #eee;border-bottom:1px solid #eee">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+        <input type="checkbox" id="aufruf-geloescht-toggle">
+        Auch gelöschte anzeigen
+      </label>
+      <span id="aufruf-treffer-count" style="font-size:12px;color:#888"></span>
+    </div>
+
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px" id="aufruf-tabelle">
+        <thead>
+          <tr style="background:#f5f5f5;text-align:left">
+            <th style="padding:8px 10px;border-bottom:1px solid #ddd">Angebotsnr</th>
+            <th style="padding:8px 10px;border-bottom:1px solid #ddd">Datum</th>
+            <th style="padding:8px 10px;border-bottom:1px solid #ddd">Kunde</th>
+            <th style="padding:8px 10px;border-bottom:1px solid #ddd">Bauvorhaben</th>
+            <th style="padding:8px 10px;border-bottom:1px solid #ddd">Ersteller</th>
+            <th style="padding:8px 10px;border-bottom:1px solid #ddd;text-align:right">Summe</th>
+            <th style="padding:8px 10px;border-bottom:1px solid #ddd"></th>
+          </tr>
+        </thead>
+        <tbody id="aufruf-tbody">
+          <tr><td colspan="7" style="padding:20px;text-align:center;color:#888">Akkordion wird mit Daten befüllt sobald JS aktiv ist...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="text-align:center;margin-top:12px">
+      <button type="button" id="aufruf-mehr-laden" hidden style="padding:8px 16px;background:#f5f5f5;border:1px solid #ddd;border-radius:4px;cursor:pointer">Weitere 10 Angebote laden</button>
+    </div>
+
+  </div>
+</div>
   <div class="card">
     <h2><span class="snum">1</span> Angebotsdaten</h2>
     <div class="fg">
