@@ -1662,7 +1662,7 @@ function markUnsaved(){
   
   function showMsg(t){var el=document.getElementById('msg-box');el.textContent=t;el.style.display='block';setTimeout(function(){el.style.display='none'},8000)}
 
-function resetAll(){
+async function resetAll(){
   S.pos=[];S.bv='';S.kunde='';S.ansprech='';S.kat='';S.marke='';S.ocPdf='';S.prom='';S.lnr='01';S.showRab=false;S.showBrutto=false;S.showTransport=false;S.transportKosten='';document.getElementById('transport-row-container').innerHTML='';var tb=document.getElementById('btn-transport');if(tb){tb.className='btn-transport off';tb.textContent='+ Transportkosten Extra';}S.showPersText=false;S.persText='';var pb=document.getElementById('btn-pers-text');if(pb){pb.className='btn-transport off';pb.textContent='+ Personalisierter Text im Angebot';}renderPersText();
   document.getElementById('f-bv').value='';
   document.getElementById('f-kunde').value='';
@@ -1671,11 +1671,15 @@ function resetAll(){
   document.getElementById('f-marke').innerHTML='<option value="">Bitte zuerst Kategorie wählen...</option>';
   document.getElementById('f-marke').disabled=true;
   document.getElementById('f-prom').selectedIndex=0;
-  document.getElementById('f-erst').selectedIndex=0;
+  if(S.currentUser){
+    document.getElementById('f-erst').value=S.currentUser.signatur_de;
+  } else {
+    document.getElementById('f-erst').selectedIndex=0;
+  }
   document.getElementById('f-lnr').value='01';
   document.getElementById('s-serie').value='';document.getElementById('s-serie').dataset.val='';
   
-  S.erst='';S.ini='';S.freigegebenFuer=[];fillFreigabeList();updateFreigabeDisplay();updateNr();
+  if(S.currentUser){     S.erst=S.currentUser.signatur_de;     S.ini=S.currentUser.email.split('@')[0].split('.').map(function(p){return p[0].toUpperCase();}).join('').substring(0,2);     try{ const lfd = await getNaechsteLfd(S.ini); if(lfd !== null) S.lnr = String(lfd).padStart(2,'0'); var lnrIn=document.getElementById('f-lnr'); if(lnrIn) lnrIn.value=S.lnr; }catch(e){ console.warn('getNaechsteLfd resetAll Fehler:',e); }   } else {     S.erst='';S.ini='';   }   S.freigegebenFuer=[];fillFreigabeList();updateFreigabeDisplay();updateNr();
  S.gespeichert=false;S.gespeichertId=null;S.geladenVon=null;S.letzteSpeicherNr='';S.notiz='';
   var fNotiz=document.getElementById('f-notiz');if(fNotiz)fNotiz.value='';
   var varBoxR=document.getElementById('variante-box');var varInputR=document.getElementById('f-variante');
