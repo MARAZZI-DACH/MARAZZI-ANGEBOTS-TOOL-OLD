@@ -396,14 +396,14 @@ async function loadStammdaten() {
     alert('Fehler beim Laden der Stammdaten. Bitte Seite neu laden.');
   }
 }  
-function init(){
+async function init(){
   var d=new Date();
   document.getElementById('hdr-info').textContent='Version 2.0';
   document.getElementById('footer-info').textContent='';
 
 var sel=document.getElementById('f-erst');
   sel.innerHTML='<option value="">Bitte wählen...</option>';
-  if(S.currentUser){     sel.innerHTML+='<option value="'+esc(S.currentUser.signatur_de)+'">'+esc(S.currentUser.name)+'</option>';     sel.value=esc(S.currentUser.signatur_de);     sel.disabled=true;     S.erst=S.currentUser.signatur_de;     S.ini=S.currentUser.email.split('@')[0].split('.').map(function(p){return p[0].toUpperCase();}).join('').substring(0,2);     updateNr();   }
+  if(S.currentUser){     sel.innerHTML+='<option value="'+esc(S.currentUser.signatur_de)+'">'+esc(S.currentUser.name)+'</option>';     sel.value=esc(S.currentUser.signatur_de);     sel.disabled=true;     S.erst=S.currentUser.signatur_de;     S.ini=S.currentUser.email.split('@')[0].split('.').map(function(p){return p[0].toUpperCase();}).join('').substring(0,2);     try{ const lfd = await getNaechsteLfd(S.ini); if(lfd !== null){ S.lnr = String(lfd).padStart(2,'0'); var lnrIn=document.getElementById('f-lnr'); if(lnrIn) lnrIn.value=S.lnr; } }catch(e){ console.warn('getNaechsteLfd init Fehler:',e); }     updateNr();   }
   fillFreigabeList();
   var psel=document.getElementById('f-prom');
   psel.innerHTML='<option value="">Bitte wählen...</option><option value="Keine Angabe">Keine Angabe</option>';
@@ -1102,7 +1102,7 @@ async function getNaechsteLfd(kuerzel){
       .select('laufende_nr')
       .eq('ersteller_kuerzel', kuerzel)
       .eq('angebots_datum', heute)
-      .eq('geloescht', false)
+      .neq('status', 'geloescht')
       .order('laufende_nr', { ascending: false })
       .limit(1);
     if(error){ console.error('Supabase Fehler:', error); return null; }
@@ -1171,7 +1171,7 @@ async function ladeAngebote(append){
           q = q.or('ersteller_email.in.("'+eigeneEmail+'","'+gvEmail+'")'
             +',freigegeben_fuer_gebiete.cs.{"'+eigenesGebiet+'"}');
         } else if(S.currentUser.rollen.includes('key-account')){
-          q = q.or('ersteller_email.eq.'+eigeneEmail
+          q = q.or('ersteller_email.in.("'+eigeneEmail+'")'
             +',freigegeben_fuer_gebiete.cs.{"'+eigenesGebiet+'"}');
         } else {
           // Nur eigene
@@ -1549,6 +1549,7 @@ var parentId = null;
       angebots_datum: angebots_datum_final,
       laufende_nr: laufende_nr_final,
       ersteller_name: S.erst || '',
+      ersteller_email: (S.geladenVon && S.geladenVon.ersteller_email) ? S.geladenVon.ersteller_email : (S.currentUser ? S.currentUser.email : ''),
       bauvorhaben: S.bv || '',
       kunde_name: kundeName,
       kunde_strasse: kundeStrasse,
