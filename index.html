@@ -193,7 +193,7 @@ button{cursor:pointer}
         </select>
       </div>
 <div>
-        <label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin-bottom:4px">Marke Brand Firma</label>
+      <label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#888;margin-bottom:4px">Marke Brand</label>
         <select id="aufruf-marke" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:4px">
           <option value="">— Alle —</option>
         </select>
@@ -257,7 +257,7 @@ button{cursor:pointer}
       <div class="fl" style="position:relative"><label>Kunde / Händler</label><input id="f-kunde" type="text" placeholder="Kunde suchen oder eingeben..." autocomplete="off" oninput="S.kunde=this.value;doKSearch(this.value)" onfocus="doKSearch(this.value)"><div id="k-results" class="ocd" style="display:none"></div></div>
       <div class="fl"><label>Ansprechpartner Kunde</label><input id="f-ansprech" type="text" placeholder="z.B. Herr Andreas Müller"></div>
       <div class="fl"><label>Objekt-Kategorie</label><select id="f-kat" onchange="handleKat(this.value)"><option value="">Bitte wählen...</option></select></div>
-      <div class="fl"><label>Marke Brand Firma</label><select id="f-marke" onchange="handleMarke(this.value)" disabled><option value="">Bitte zuerst Kategorie wählen...</option></select></div>
+      <div class="fl"><label>Marke Brand</label><select id="f-marke" onchange="handleMarke(this.value)" disabled><option value="">Bitte zuerst Kategorie wählen...</option></select></div>
       <div class="fl"><label>Bauvorhaben</label><input id="f-bv" type="text" placeholder="z.B. VW MÜLLER BRAUNSCHWEIG"></div>
       <div class="fl"><label>Bauvorhaben aus CRM</label><button type="button" disabled style="width:100%;padding:8px;background:#f0f0f0;color:#aaa;border:1px solid #ddd;border-radius:6px;cursor:not-allowed;font-size:13px">🔍 CRM (noch nicht aktiv)</button></div>
       <div class="fl"><button class="btn-transport off" id="btn-transport" onclick="S.showTransport=!S.showTransport;this.className='btn-transport '+(S.showTransport?'on':'off');this.textContent=S.showTransport?'\u2713 Transportkosten aktiv':'+ Transportkosten Extra';renderTransport();markChanged()" style="width:100%;margin-top:20px">+ Transportkosten Extra</button></div>
