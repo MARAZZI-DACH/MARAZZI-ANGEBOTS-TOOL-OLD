@@ -96,6 +96,8 @@ button{cursor:pointer}
   #aufruf-tabelle{table-layout:auto !important}
   #aufruf-tabelle colgroup,#aufruf-tabelle col{display:none !important}
   #aufruf-tabelle thead,#aufruf-tabelle thead tr,#aufruf-tabelle thead th{display:none !important;visibility:hidden !important;height:0 !important;padding:0 !important;margin:0 !important;border:0 !important;position:static !important}
+  /* Versteckter Pseudo-Header (erstes tbody mit der Kopfzeile) ausblenden */
+  #aufruf-tabelle tbody:not(#aufruf-tbody){display:none !important;visibility:hidden !important;height:0 !important}
   #aufruf-tabelle, #aufruf-tabelle tbody, #aufruf-tabelle tbody tr, #aufruf-tabelle tbody td{display:block;width:100%;box-sizing:border-box}
   #aufruf-tabelle tbody tr{border:1px solid #ddd;border-radius:8px;margin-bottom:12px;padding:12px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
   #aufruf-tabelle tbody td{border:none;padding:4px 0;text-align:left !important}
@@ -115,7 +117,7 @@ button{cursor:pointer}
   #aufruf-tabelle tbody td:nth-child(9){display:inline-block;width:28%;padding-top:10px;float:right}
   #aufruf-tabelle tbody td:nth-child(9) button{width:100% !important;height:38px !important}
   /* iOS Safari: input type=date in Filter-Bereich kompakter machen */
-  input[type="date"]{min-width:0;width:100%;font-size:13px;padding:8px 6px;-webkit-appearance:none;appearance:none;box-sizing:border-box}
+  input[type="date"]{min-width:0;width:100%;font-size:13px;padding:8px 6px;-webkit-appearance:none;appearance:none;box-sizing:border-box;min-height:36px;line-height:1.4;display:block}   #aufruf-datum-von,#aufruf-datum-bis{min-height:36px}
 }
 </style>
 <!-- jsPDF + autotable: Vektor-PDF, Browser-Update-resistent (jsdelivr CDN) -->
