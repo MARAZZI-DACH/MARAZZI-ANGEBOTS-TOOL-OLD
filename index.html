@@ -91,6 +91,28 @@ button{cursor:pointer}
   .sr{flex-direction:column}.sr select,.sr input{min-width:0;width:100%}
   .pt{font-size:10px}.pt th,.pt td{padding:4px 3px}
   .opts-row{flex-direction:column;align-items:flex-start;gap:12px}
+
+  /* iPhone: Angebots-Liste als Karten statt Tabelle */
+  #aufruf-tabelle{table-layout:auto}
+  #aufruf-tabelle colgroup{display:none}
+  #aufruf-tabelle thead{display:none}
+  #aufruf-tabelle, #aufruf-tabelle tbody, #aufruf-tabelle tr, #aufruf-tabelle td{display:block;width:100%}
+  #aufruf-tabelle tr{border:1px solid #ddd;border-radius:8px;margin-bottom:12px;padding:12px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+  #aufruf-tabelle td{border:none;padding:4px 0;text-align:left !important}
+  #aufruf-tabelle td:nth-child(1){font-family:monospace;font-weight:700;font-size:14px;color:#2c3e5a;display:inline-block;width:auto}
+  #aufruf-tabelle td:nth-child(2){display:inline-block;width:auto;float:right;color:#666;font-size:12px}
+  #aufruf-tabelle td:nth-child(3){clear:both;font-weight:600;padding-top:6px}
+  #aufruf-tabelle td:nth-child(3):before{content:"Kunde: ";font-weight:400;color:#888}
+  #aufruf-tabelle td:nth-child(4):before{content:"BV: ";color:#888}
+  #aufruf-tabelle td:nth-child(5):before{content:"Ersteller: ";color:#888}
+  #aufruf-tabelle td:nth-child(6),#aufruf-tabelle td:nth-child(7){display:inline-block;width:48%;font-weight:600}
+  #aufruf-tabelle td:nth-child(6):before{content:"Fläche: ";font-weight:400;color:#888}
+  #aufruf-tabelle td:nth-child(7):before{content:"Summe: ";font-weight:400;color:#888}
+  #aufruf-tabelle td:nth-child(7){text-align:right !important;color:#E30613}
+  #aufruf-tabelle td:nth-child(8){display:inline-block;width:70%;padding-top:10px}
+  #aufruf-tabelle td:nth-child(8) button{width:100%;padding:10px !important;font-size:14px !important}
+  #aufruf-tabelle td:nth-child(9){display:inline-block;width:28%;padding-top:10px;float:right}
+  #aufruf-tabelle td:nth-child(9) button{width:100% !important;height:38px !important}
 }
 </style>
 <!-- jsPDF + autotable: Vektor-PDF, Browser-Update-resistent (jsdelivr CDN) -->
