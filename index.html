@@ -1729,7 +1729,7 @@ async function resetAll(){
   document.getElementById('s-serie').value='';document.getElementById('s-serie').dataset.val='';
   
   if(S.currentUser){     S.erst=S.currentUser.signatur_de;     S.ini=S.currentUser.email.split('@')[0].split('.').map(function(p){return p[0].toUpperCase();}).join('').substring(0,2);     try{ const lfd = await getNaechsteLfd(S.ini); if(lfd !== null) S.lnr = String(lfd).padStart(2,'0'); var lnrIn=document.getElementById('f-lnr'); if(lnrIn) lnrIn.value=S.lnr; }catch(e){ console.warn('getNaechsteLfd resetAll Fehler:',e); }   } else {     S.erst='';S.ini='';   }   S.freigegebenFuer=[];fillFreigabeList();updateFreigabeDisplay();updateNr();
- S.gespeichert=false;S.gespeichertId=null;S.geladenVon=null;S.letzteSpeicherNr='';S.notiz='';
+ S.gespeichert=false;S.gespeichertId=null;S.geladenVon=null;S.letzteSpeicherNr='';S.notiz='';S.istOriginalGeladen=false;S.geaendert=false;
   var fNotiz=document.getElementById('f-notiz');if(fNotiz)fNotiz.value='';
   var varBoxR=document.getElementById('variante-box');var varInputR=document.getElementById('f-variante');
   if(varInputR)varInputR.value='';
