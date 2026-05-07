@@ -1375,7 +1375,7 @@ async function ladeAngebotInsTool(id){
       alert('Fehler beim Laden:\n\n' + (error ? error.message : 'Angebot nicht gefunden'));
       return;
     }
-    resetAll();
+    await resetAll();
     S.geladenVon = data;
     S.gespeichert = true;
     S.gespeichertId = data.id;
