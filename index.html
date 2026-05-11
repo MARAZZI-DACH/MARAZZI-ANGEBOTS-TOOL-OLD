@@ -2026,8 +2026,12 @@ async function naechsteVariante(parentId){
 var parentId = null;
     var varianteWert = null;
     // Bei Variante (geladenes Angebot): Original-Lfd-Nr + Original-Datum behalten,
-    // aber Ersteller-Daten IMMER vom aktuellen User übernehmen (Bug-Fix 11.05.2026).
-    var ersteller_kuerzel_final = S.ini || 'XX';
+    // aber Kürzel/Name/Email IMMER vom aktuellen User (Bug-Fix 11.05.2026).
+    // S.ini/S.erst können beim Laden auf den Original-Ersteller gesetzt sein (Patch 1),
+    // daher hier explizit aus S.currentUser ableiten statt S.ini zu verwenden.
+    var ersteller_kuerzel_final = (S.currentUser && S.currentUser.email)
+      ? S.currentUser.email.split('@')[0].split('.').map(function(p){return p[0].toUpperCase();}).join('').substring(0,2)
+      : (S.ini || 'XX');
     var ersteller_name_final = (S.currentUser && S.currentUser.signatur_de) ? S.currentUser.signatur_de : (S.erst || '');
     var ersteller_email_final = S.currentUser ? S.currentUser.email : '';
     var angebots_datum_final = heute;
