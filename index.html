@@ -1875,18 +1875,29 @@ async function ladeAngebotInsTool(id){
     var fNotiz = document.getElementById('f-notiz');
     if(fNotiz) fNotiz.value = S.notiz;
     if(data.ersteller_name){
+      // Ersteller IMMER aus Datensatz übernehmen (Original-Ersteller bleibt im PDF sichtbar).
+      // Dropdown 'f-erst' enthält nur den eingeloggten User — wir hängen den Original-Ersteller
+      // als zusätzliche, ausgewählte Option ein, damit das Feld den richtigen Namen zeigt.
+      S.erst = data.ersteller_name;
+      S.ini = data.ersteller_kuerzel || '';
       var erstSel = document.getElementById('f-erst');
-      var erstFound = false;
-      for(var j = 0; j < erstSel.options.length; j++){
-        if(erstSel.options[j].value === data.ersteller_name){
-          erstSel.selectedIndex = j;
-          erstFound = true;
-          break;
+      if(erstSel){
+        var erstFound = false;
+        for(var j = 0; j < erstSel.options.length; j++){
+          if(erstSel.options[j].value === data.ersteller_name){
+            erstSel.selectedIndex = j;
+            erstFound = true;
+            break;
+          }
         }
-      }
-      if(erstFound){
-        S.erst = data.ersteller_name;
-        S.ini = data.ersteller_kuerzel || '';
+        if(!erstFound){
+          var opt = document.createElement('option');
+          opt.value = data.ersteller_name;
+          opt.text = data.ersteller_name;
+          opt.dataset.geladen = '1';
+          erstSel.appendChild(opt);
+          erstSel.value = data.ersteller_name;
+        }
       }
     }
     S.lnr = String(data.laufende_nr || 1).padStart(2, '0');
@@ -2152,6 +2163,15 @@ async function resetAll(){
   document.getElementById('f-marke').innerHTML='<option value="">Bitte zuerst Kategorie wählen...</option>';
   document.getElementById('f-marke').disabled=true;
   document.getElementById('f-prom').selectedIndex=0;
+  // Geladene Ersteller-Optionen entfernen (wurden in ladeAngebotInsTool() dynamisch hinzugefügt)
+  var erstSelReset = document.getElementById('f-erst');
+  if(erstSelReset){
+    for(var er = erstSelReset.options.length - 1; er >= 0; er--){
+      if(erstSelReset.options[er].dataset && erstSelReset.options[er].dataset.geladen === '1'){
+        erstSelReset.remove(er);
+      }
+    }
+  }
   if(S.currentUser){
     document.getElementById('f-erst').value=S.currentUser.signatur_de;
   } else {
