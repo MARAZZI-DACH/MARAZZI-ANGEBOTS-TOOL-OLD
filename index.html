@@ -2025,14 +2025,17 @@ async function naechsteVariante(parentId){
     }, 0);
 var parentId = null;
     var varianteWert = null;
+    // Bei Variante (geladenes Angebot): Original-Lfd-Nr + Original-Datum behalten,
+    // aber Ersteller-Daten IMMER vom aktuellen User übernehmen (Bug-Fix 11.05.2026).
     var ersteller_kuerzel_final = S.ini || 'XX';
+    var ersteller_name_final = (S.currentUser && S.currentUser.signatur_de) ? S.currentUser.signatur_de : (S.erst || '');
+    var ersteller_email_final = S.currentUser ? S.currentUser.email : '';
     var angebots_datum_final = heute;
     var laufende_nr_final = lfdNum;
     if(S.geladenVon && S.geladenVon.id){
       var rootId = S.geladenVon.parent_id || S.geladenVon.id;
       varianteWert = await naechsteVariante(rootId);
       parentId = rootId;
-      ersteller_kuerzel_final = S.geladenVon.ersteller_kuerzel || ersteller_kuerzel_final;
       angebots_datum_final = S.geladenVon.angebots_datum || angebots_datum_final;
       laufende_nr_final = S.geladenVon.laufende_nr || laufende_nr_final;
     }
@@ -2040,8 +2043,8 @@ var parentId = null;
       ersteller_kuerzel: ersteller_kuerzel_final,
       angebots_datum: angebots_datum_final,
       laufende_nr: laufende_nr_final,
-      ersteller_name: S.erst || '',
-      ersteller_email: (S.geladenVon && S.geladenVon.ersteller_email) ? S.geladenVon.ersteller_email : (S.currentUser ? S.currentUser.email : ''),
+      ersteller_name: ersteller_name_final,
+      ersteller_email: ersteller_email_final,
       bauvorhaben: S.bv || '',
       kunde_name: kundeName,
       kunde_strasse: kundeStrasse,
